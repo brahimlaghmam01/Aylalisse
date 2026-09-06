@@ -62,4 +62,26 @@ class AppointmentFactory extends Factory
     {
         return $this->state(fn () => ['status' => AppointmentStatus::NoShow]);
     }
+
+    public function depositPaid(): static
+    {
+        return $this->state(fn () => ['deposit_paid_at' => now()]);
+    }
+
+    public function balancePaid(): static
+    {
+        return $this->state(fn () => ['balance_paid_at' => now()]);
+    }
+
+    /**
+     * Prestation "sur devis" : prix nul, seul l'acompte est défini.
+     */
+    public function onQuote(): static
+    {
+        return $this->state(fn () => [
+            'price' => 0,
+            'deposit_amount' => 50,
+            'remaining_amount' => 0,
+        ]);
+    }
 }

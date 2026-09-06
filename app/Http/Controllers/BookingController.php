@@ -14,27 +14,38 @@ use Illuminate\View\View;
 class BookingController extends Controller
 {
     /**
-     * Page de réservation : le parcours en 5 étapes (Alpine.js), alimenté
-     * par les prestations actives réellement en base.
+     * Page de réservation : formulaire sur une seule page (Alpine.js),
+     * alimenté par les prestations actives réellement en base.
      */
     public function index(): View
     {
         $services = LissageService::query()->active()->ordered()->get();
 
         return view('booking.index', [
-            'servicesPayload' => $services->map(fn (LissageService $service) => [
-                'id' => $service->id,
-                'slug' => $service->slug,
-                'name' => $service->name,
-                'short_description' => $service->short_description,
-                'duration_minutes' => $service->duration_minutes,
-                'duration_label' => $this->formatDuration($service->duration_minutes),
-                'price' => (float) $service->price,
-                'price_label' => $service->is_on_quote ? 'Sur devis' : $this->formatMoney((float) $service->price),
-                'deposit_amount' => (float) $service->deposit_amount,
-                'deposit_label' => $this->formatMoney((float) $service->deposit_amount),
-                'is_on_quote' => $service->is_on_quote,
-            ])->values(),
+            'servicesPayload' => $services->map(function (LissageService $service) {
+                $lengthPrices = $service->lengthPrices();
+                $hasLengthPricing = $lengthPrices !== [];
+                $displayPrice = $hasLengthPricing ? min($lengthPrices) : (float) $service->price;
+
+                return [
+                    'id' => $service->id,
+                    'slug' => $service->slug,
+                    'name' => $service->name,
+                    'short_description' => $service->short_description,
+                    'image_url' => $service->image_url,
+                    'duration_minutes' => $service->duration_minutes,
+                    'duration_label' => $this->formatDuration($service->duration_minutes),
+                    'price' => (float) $service->price,
+                    'price_label' => $service->is_on_quote
+                        ? 'Sur devis'
+                        : ($hasLengthPricing ? 'À partir de '.$this->formatMoney($displayPrice) : $this->formatMoney($displayPrice)),
+                    'deposit_amount' => (float) $service->deposit_amount,
+                    'deposit_label' => $this->formatMoney((float) $service->deposit_amount),
+                    'is_on_quote' => $service->is_on_quote,
+                    'has_length_pricing' => $hasLengthPricing,
+                    'length_prices' => (object) $lengthPrices,
+                ];
+            })->values(),
         ]);
     }
 

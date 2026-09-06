@@ -57,7 +57,7 @@
             <dl class="mt-3 space-y-2 text-sm">
                 <div class="flex items-baseline justify-between">
                     <dt class="text-ink/60">Total prestation</dt>
-                    <dd class="font-serif text-base text-cocoa" x-text="selectedService.price_label"></dd>
+                    <dd class="font-serif text-base text-cocoa" x-text="totalPriceLabel"></dd>
                 </div>
                 <div class="flex items-baseline justify-between">
                     <dt class="text-ink/60">Acompte de réservation</dt>
@@ -67,6 +67,12 @@
                     <dt class="text-ink/60">Solde le jour du rendez-vous</dt>
                     <dd class="text-ink/80" x-text="remainingAmountLabel"></dd>
                 </div>
+                <p x-show="needsHairLength && !hairLength" class="pt-1 text-xs text-taupe">
+                    Le tarif dépend de la longueur de vos cheveux — sélectionnez-la ci-dessus.
+                </p>
+                <p x-show="selectedService.is_on_quote" class="pt-1 text-xs text-ink/45">
+                    Prix défini après le diagnostic capillaire offert.
+                </p>
             </dl>
         </template>
         <p class="mt-2 text-sm text-ink/40" x-show="!selectedService">—</p>

@@ -10,6 +10,30 @@
     <a href="{{ route('admin.clients.index') }}" class="text-xs font-semibold uppercase tracking-wide text-taupe hover:text-cocoa">← Toutes les clientes</a>
     <h1 class="mb-8 mt-2 font-serif text-2xl text-cocoa">{{ $client->full_name }}</h1>
 
+    {{-- Résumé financier --}}
+    <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="admin-card p-4">
+            <p class="text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink/45">Rendez-vous</p>
+            <p class="mt-1.5 font-serif text-2xl text-cocoa">{{ $financials['total_appointments'] }}</p>
+        </div>
+        <div class="admin-card p-4">
+            <p class="text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink/45">Prestations terminées</p>
+            <p class="mt-1.5 font-serif text-2xl text-cocoa">{{ $financials['completed_count'] }}</p>
+        </div>
+        <div class="admin-card p-4">
+            <p class="text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink/45">Valeur des prestations terminées</p>
+            <p class="mt-1.5 font-serif text-2xl text-cocoa"><x-admin.money :value="$financials['completed_value']" /></p>
+        </div>
+        <div class="admin-card p-4">
+            <p class="text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink/45">Réellement encaissé</p>
+            <p class="mt-1.5 font-serif text-2xl text-emerald-700"><x-admin.money :value="$financials['collected']" /></p>
+        </div>
+        <div class="admin-card p-4">
+            <p class="text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-ink/45">Restant à encaisser</p>
+            <p class="mt-1.5 font-serif text-2xl text-cocoa"><x-admin.money :value="$financials['outstanding']" /></p>
+        </div>
+    </div>
+
     <div class="grid gap-6 lg:grid-cols-3">
         <x-admin.card title="Informations générales">
             <dl class="space-y-3 text-sm">
@@ -25,7 +49,7 @@
 
         <div class="admin-card lg:col-span-2">
             <div class="border-b border-nude/30 px-6 py-4">
-                <h2 class="font-serif text-lg text-cocoa">Historique des rendez-vous</h2>
+                <h2 class="font-serif text-lg text-cocoa">Historique financier des rendez-vous</h2>
             </div>
             @if ($client->appointments->isEmpty())
                 <p class="p-6 text-sm text-ink/50">Aucun rendez-vous pour l'instant.</p>
@@ -36,24 +60,27 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Prestation</th>
+                                <th class="text-right">Prix</th>
+                                <th class="text-right">Acompte</th>
+                                <th class="text-right">Solde</th>
+                                <th>Encaissement</th>
                                 <th>Statut</th>
-                                <th>Prix</th>
-                                <th>Diagnostic</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($client->appointments as $appointment)
                                 <tr>
-                                    <td>{{ $appointment->appointment_date->translatedFormat('d F Y') }}</td>
+                                    <td>{{ $appointment->appointment_date->translatedFormat('d/m/Y') }}</td>
                                     <td>{{ $appointment->lissageService->name }}</td>
-                                    <td><x-admin.status-badge :status="$appointment->status" /></td>
-                                    <td>{{ number_format((float) $appointment->price, 2, ',', ' ') }} €</td>
-                                    <td class="text-xs text-ink/60">
-                                        {{ $hairLengthLabels[$appointment->hair_length] ?? '' }}
-                                        @if ($appointment->hair_length && $appointment->natural_texture) · @endif
-                                        {{ $textureLabels[$appointment->natural_texture] ?? '' }}
+                                    <td class="text-right">{{ $appointment->priceLabel() }}</td>
+                                    <td class="text-right">{{ $appointment->depositLabel() }}</td>
+                                    <td class="text-right">{{ $appointment->remainingLabel() }}</td>
+                                    <td class="whitespace-nowrap text-xs">
+                                        <span class="{{ $appointment->isDepositPaid() ? 'text-emerald-700' : 'text-ink/40' }}">Acompte {{ $appointment->isDepositPaid() ? '✓' : '—' }}</span><br>
+                                        <span class="{{ $appointment->isBalancePaid() ? 'text-emerald-700' : 'text-ink/40' }}">Solde {{ $appointment->isBalancePaid() ? '✓' : '—' }}</span>
                                     </td>
+                                    <td><x-admin.status-badge :status="$appointment->status" /></td>
                                     <td class="text-right">
                                         <a href="{{ route('admin.appointments.show', $appointment) }}" class="text-xs font-semibold uppercase tracking-wide text-taupe hover:text-cocoa">Voir</a>
                                     </td>

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 /*
-| Réservation — parcours complet en 5 étapes (Alpine.js), branché sur
+| Réservation — formulaire sur une seule page (Alpine.js), branché sur
 | AppointmentAvailabilityService / AppointmentService. Le nom de route
 | "booking" (page d'accueil du parcours) est conservé tel quel : c'est
 | celui utilisé par le CTA "Prendre rendez-vous" partout sur le site.

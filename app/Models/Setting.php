@@ -89,8 +89,15 @@ class Setting extends Model
         };
     }
 
-    protected static function prepareValue(mixed $value, string $type): string
+    protected static function prepareValue(mixed $value, string $type): ?string
     {
+        // Une valeur nulle est stockée telle quelle (colonne "value" nullable) :
+        // Setting::get() retombera proprement sur son défaut. Indispensable pour
+        // les réglages effaçables (sous-texte du bandeau, image Hero retirée…).
+        if ($value === null) {
+            return null;
+        }
+
         return match ($type) {
             'json', 'array' => json_encode($value),
             'bool', 'boolean' => $value ? '1' : '0',

@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\AdminCalendarController;
 use App\Http\Controllers\Admin\AdminClientController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminLissageServiceController;
+use App\Http\Controllers\Admin\AdminPriceController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AdminSiteContentController;
 use App\Http\Controllers\Admin\AdminTestimonialController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::patch('/{appointment}/statut', [AdminAppointmentController::class, 'updateStatus'])->name('status');
             Route::patch('/{appointment}/reprogrammer', [AdminAppointmentController::class, 'reschedule'])->name('reschedule');
             Route::patch('/{appointment}/notes', [AdminAppointmentController::class, 'updateNotes'])->name('notes');
+            Route::patch('/{appointment}/encaissement', [AdminAppointmentController::class, 'updatePayment'])->name('payment');
         });
 
         Route::get('/calendrier', [AdminCalendarController::class, 'index'])->name('calendar');
@@ -90,5 +93,33 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/parametres', [AdminSettingsController::class, 'index'])->name('settings.index');
         Route::put('/parametres', [AdminSettingsController::class, 'update'])->name('settings.update');
+
+        /*
+        | Apparence du site — bandeau supérieur + image de la section Hero.
+        */
+        Route::prefix('apparence')->name('site-content.')->group(function () {
+            Route::get('/', [AdminSiteContentController::class, 'index'])->name('index');
+            Route::put('/banniere', [AdminSiteContentController::class, 'updateBanner'])->name('banner.update');
+            Route::post('/hero', [AdminSiteContentController::class, 'updateHero'])->name('hero.update');
+            Route::delete('/hero', [AdminSiteContentController::class, 'destroyHero'])->name('hero.destroy');
+        });
+
+        /*
+        | Grille tarifaire — titre général, sections et lignes de prix.
+        */
+        Route::prefix('tarifs')->name('pricing.')->group(function () {
+            Route::get('/', [AdminPriceController::class, 'index'])->name('index');
+            Route::put('/reglages', [AdminPriceController::class, 'updateSettings'])->name('settings.update');
+
+            Route::post('/sections', [AdminPriceController::class, 'storeSection'])->name('sections.store');
+            Route::put('/sections/{section}', [AdminPriceController::class, 'updateSection'])->name('sections.update');
+            Route::patch('/sections/{section}/statut', [AdminPriceController::class, 'toggleSection'])->name('sections.toggle');
+            Route::delete('/sections/{section}', [AdminPriceController::class, 'destroySection'])->name('sections.destroy');
+
+            Route::post('/sections/{section}/lignes', [AdminPriceController::class, 'storeRow'])->name('rows.store');
+            Route::put('/lignes/{row}', [AdminPriceController::class, 'updateRow'])->name('rows.update');
+            Route::patch('/lignes/{row}/statut', [AdminPriceController::class, 'toggleRow'])->name('rows.toggle');
+            Route::delete('/lignes/{row}', [AdminPriceController::class, 'destroyRow'])->name('rows.destroy');
+        });
     });
 });

@@ -26,6 +26,8 @@ class Appointment extends Model
         'price',
         'deposit_amount',
         'remaining_amount',
+        'deposit_paid_at',
+        'balance_paid_at',
         'hair_length',
         'natural_texture',
         'chemical_history',
@@ -39,6 +41,8 @@ class Appointment extends Model
         return [
             'appointment_date' => 'date',
             'cancelled_at' => 'datetime',
+            'deposit_paid_at' => 'datetime',
+            'balance_paid_at' => 'datetime',
             'price' => 'decimal:2',
             'deposit_amount' => 'decimal:2',
             'remaining_amount' => 'decimal:2',
@@ -95,6 +99,122 @@ class Appointment extends Model
     public function blockingEndsAt(): Carbon
     {
         return $this->endsAt()->addMinutes($this->lissageService?->buffer_minutes ?? 0);
+    }
+
+    /**
+     * Un rendez-vous dont le prix figé est nul correspond à une prestation
+     * "sur devis" : le montant sera arrêté après le diagnostic capillaire.
+     */
+    public function isOnQuote(): bool
+    {
+        return (float) $this->price <= 0.0;
+    }
+
+    /**
+     * Libellé d'affichage du prix figé — « Sur devis » plutôt que « 0,00 € ».
+     */
+    public function priceLabel(): string
+    {
+        return $this->isOnQuote()
+            ? 'Sur devis'
+            : number_format((float) $this->price, 2, ',', ' ').' €';
+    }
+
+    /**
+     * Libellé du solde restant — « À définir après diagnostic » quand le
+     * prix n'est pas encore arrêté.
+     */
+    public function remainingLabel(): string
+    {
+        return $this->isOnQuote()
+            ? 'À définir après diagnostic'
+            : number_format((float) $this->remaining_amount, 2, ',', ' ').' €';
+    }
+
+    public function depositLabel(): string
+    {
+        return number_format((float) $this->deposit_amount, 2, ',', ' ').' €';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Encaissements (suivi administratif)
+    |--------------------------------------------------------------------------
+    */
+
+    public function isDepositPaid(): bool
+    {
+        return $this->deposit_paid_at !== null;
+    }
+
+    public function isBalancePaid(): bool
+    {
+        return $this->balance_paid_at !== null;
+    }
+
+    /**
+     * Une prestation est réellement réalisée (et compte dans le chiffre
+     | d'affaires) uniquement au statut "completed".
+     */
+    public function isRevenueRealised(): bool
+    {
+        return $this->status === AppointmentStatus::Completed;
+    }
+
+    /**
+     * Montant réellement encaissé sur ce rendez-vous = acompte s'il est
+     * marqué payé + solde s'il est marqué payé. Jamais déduit du statut.
+     */
+    public function amountCollected(): float
+    {
+        $collected = 0.0;
+
+        if ($this->isDepositPaid()) {
+            $collected += (float) $this->deposit_amount;
+        }
+
+        if ($this->isBalancePaid()) {
+            $collected += (float) $this->remaining_amount;
+        }
+
+        return round($collected, 2);
+    }
+
+    /**
+     * Montant restant réellement à encaisser sur ce rendez-vous : ce qui
+     * n'a pas encore été marqué payé. Sur devis (prix nul) => 0.
+     */
+    public function amountOutstanding(): float
+    {
+        if ($this->isOnQuote()) {
+            return 0.0;
+        }
+
+        $outstanding = 0.0;
+
+        if (! $this->isDepositPaid()) {
+            $outstanding += (float) $this->deposit_amount;
+        }
+
+        if (! $this->isBalancePaid()) {
+            $outstanding += (float) $this->remaining_amount;
+        }
+
+        return round($outstanding, 2);
+    }
+
+    /**
+     * Rendez-vous terminés (chiffre d'affaires réalisé). Le prix utilisé est
+     * toujours le prix historique figé sur la ligne.
+     */
+    public function scopeRealisedRevenue(Builder $query): Builder
+    {
+        return $query->where('status', AppointmentStatus::Completed->value);
+    }
+
+    public function scopeBetweenDates(Builder $query, CarbonInterface $from, CarbonInterface $to): Builder
+    {
+        return $query->whereBetween('appointment_date', [$from->toDateString(), $to->toDateString()]);
     }
 
     /**

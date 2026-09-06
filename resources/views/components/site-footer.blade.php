@@ -31,6 +31,7 @@
                 <ul class="mt-5 space-y-3 text-sm">
                     <li><a href="{{ url('/') }}#le-lissage" class="transition-colors hover:text-white">Le lissage</a></li>
                     <li><a href="{{ url('/') }}#resultats" class="transition-colors hover:text-white">Résultats</a></li>
+                    <li><a href="{{ url('/') }}#tarifs" class="transition-colors hover:text-white">Tarifs</a></li>
                     <li><a href="{{ url('/') }}#notre-methode" class="transition-colors hover:text-white">Notre méthode</a></li>
                     <li><a href="{{ url('/') }}#temoignages" class="transition-colors hover:text-white">Témoignages</a></li>
                     <li><a href="{{ url('/') }}#faq" class="transition-colors hover:text-white">FAQ</a></li>

@@ -59,18 +59,28 @@
                         <p class="mt-2 text-sm text-ink/60">Quelques informations pour préparer votre rituel.</p>
 
                         <div class="mt-6 card-soft p-6 sm:p-8">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-ink/60">Longueur des cheveux</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-ink/60">
+                                Longueur des cheveux<span x-show="needsHairLength"> *</span>
+                            </p>
+                            <p x-show="needsHairLength" class="mt-1 text-xs text-taupe">Le tarif de votre lissage dépend de la longueur.</p>
                             <div class="mt-3 grid grid-cols-3 gap-3" role="radiogroup" aria-label="Longueur des cheveux">
                                 <template x-for="option in hairLengths" :key="option.value">
                                     <button
                                         type="button" role="radio" :aria-checked="hairLength === option.value"
                                         @click="selectHairLength(option.value)"
-                                        class="border p-3 text-center text-sm transition-colors"
+                                        class="flex min-h-[3rem] flex-col items-center justify-center gap-0.5 border p-3 text-center text-sm transition-colors"
                                         :class="hairLength === option.value ? 'border-cocoa bg-sand/30 text-cocoa' : 'border-nude/40 text-ink/70 hover:border-taupe'"
-                                        x-text="option.label"
-                                    ></button>
+                                    >
+                                        <span x-text="option.label"></span>
+                                        <span
+                                            x-show="selectedService && selectedService.has_length_pricing && selectedService.length_prices[option.value] !== undefined"
+                                            class="text-xs text-taupe"
+                                            x-text="selectedService ? money(selectedService.length_prices[option.value]) : ''"
+                                        ></span>
+                                    </button>
                                 </template>
                             </div>
+                            <p x-show="errors.hair_length" x-cloak x-text="errors.hair_length" class="mt-2 text-xs text-red-600"></p>
 
                             <p class="mt-7 text-xs font-semibold uppercase tracking-wide text-ink/60">Couleur des cheveux</p>
                             <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">

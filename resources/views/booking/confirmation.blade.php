@@ -55,8 +55,16 @@
                         <dd class="text-right font-medium text-ink">{{ $durationLabel }} de rituel</dd>
                     </div>
                     <div class="flex justify-between gap-4 border-t border-ink/10 pt-4">
+                        <dt class="text-ink/50">Total prestation</dt>
+                        <dd class="text-right font-medium text-ink">{{ $appointment->priceLabel() }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
                         <dt class="text-ink/50">Acompte de réservation</dt>
-                        <dd class="text-right font-serif text-lg text-cocoa">{{ number_format((float) $appointment->deposit_amount, 2, ',', ' ') }} €</dd>
+                        <dd class="text-right font-serif text-lg text-cocoa">{{ $appointment->depositLabel() }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-ink/50">Solde le jour du rendez-vous</dt>
+                        <dd class="text-right font-medium text-ink">{{ $appointment->remainingLabel() }}</dd>
                     </div>
                 </dl>
             </div>

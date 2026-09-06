@@ -5,7 +5,7 @@
         @if ($testimonial->image)
             <div class="mb-6">
                 <p class="admin-label">Photo actuelle</p>
-                <img src="{{ Storage::url($testimonial->image) }}" alt="{{ $testimonial->client_name }}" class="h-24 w-24 border border-nude/40 object-cover">
+                <img src="{{ $testimonial->image_url }}" alt="{{ $testimonial->client_name }}" class="h-24 w-24 border border-nude/40 object-cover">
             </div>
         @endif
 

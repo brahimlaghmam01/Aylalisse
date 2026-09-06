@@ -122,8 +122,9 @@ class AdminAppointmentController extends Controller
 
         $previousDate = $appointment->appointment_date->toDateString();
         $previousStartTime = $appointment->start_time;
+        $serviceChanged = $service->id !== $appointment->lissage_service_id;
 
-        DB::transaction(function () use ($appointment, $service, $date, $startTime) {
+        DB::transaction(function () use ($appointment, $service, $date, $startTime, $serviceChanged) {
             $start = Carbon::parse($date->toDateString().' '.$startTime);
             $end = $start->copy()->addMinutes($service->duration_minutes);
 
@@ -131,9 +132,19 @@ class AdminAppointmentController extends Controller
             $appointment->appointment_date = $date->toDateString();
             $appointment->start_time = $start->format('H:i:s');
             $appointment->end_time = $end->format('H:i:s');
-            $appointment->price = $service->price;
-            $appointment->deposit_amount = $service->deposit_amount;
-            $appointment->remaining_amount = max((float) $service->price - (float) $service->deposit_amount, 0);
+
+            // Le prix historique n'est JAMAIS réécrit lors d'un simple
+            // changement de date/heure. Il n'est recalculé que si
+            // l'administratrice change réellement la prestation (choix
+            // délibéré) — auquel cas on repart de la même source de vérité
+            // que la création (prix éventuellement fonction de la longueur).
+            if ($serviceChanged) {
+                $pricing = $service->pricingFor($appointment->hair_length);
+                $appointment->price = $pricing['price'];
+                $appointment->deposit_amount = $pricing['deposit_amount'];
+                $appointment->remaining_amount = $pricing['remaining_amount'];
+            }
+
             $appointment->save();
         });
 
@@ -151,5 +162,31 @@ class AdminAppointmentController extends Controller
         $appointment->update($validated);
 
         return back()->with('success', 'Les notes internes ont été enregistrées.');
+    }
+
+    /**
+     * Suivi administratif des encaissements : l'administratrice coche
+     * l'acompte et/ou le solde comme réellement payés (en salon). Aucun
+     * paiement en ligne — seul un suivi manuel. On préserve l'horodatage
+     * existant plutôt que de le réécrire à chaque enregistrement.
+     */
+    public function updatePayment(Request $request, Appointment $appointment): RedirectResponse
+    {
+        $request->validate([
+            'deposit_paid' => ['sometimes', 'boolean'],
+            'balance_paid' => ['sometimes', 'boolean'],
+        ]);
+
+        $appointment->deposit_paid_at = $request->boolean('deposit_paid')
+            ? ($appointment->deposit_paid_at ?? now())
+            : null;
+
+        $appointment->balance_paid_at = $request->boolean('balance_paid')
+            ? ($appointment->balance_paid_at ?? now())
+            : null;
+
+        $appointment->save();
+
+        return back()->with('success', 'Le suivi des encaissements a été mis à jour.');
     }
 }

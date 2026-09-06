@@ -25,9 +25,28 @@ class SettingSeeder extends Seeder
             'brand_address_line' => ['value' => config('aylalisse.address.line'), 'type' => 'string'],
             'brand_address_zip' => ['value' => config('aylalisse.address.zip'), 'type' => 'string'],
             'brand_address_city' => ['value' => config('aylalisse.address.city'), 'type' => 'string'],
+
+            // Bandeau supérieur — modifiable depuis /admin/apparence.
+            'top_banner_enabled' => ['value' => true, 'type' => 'boolean'],
+            'top_banner_text' => ['value' => 'Haute coiffure & lissage d’exception — Diagnostic personnalisé offert', 'type' => 'string'],
+            'top_banner_subtext' => ['value' => null, 'type' => 'string'],
+
+            // Image de la section Hero — chemin relatif sur le disque "public".
+            'hero_image' => ['value' => null, 'type' => 'string'],
+
+            // Grille tarifaire — modifiable depuis /admin/tarifs.
+            'pricing_enabled' => ['value' => true, 'type' => 'boolean'],
+            'pricing_title' => ['value' => 'Nos tarifs', 'type' => 'string'],
+            'pricing_intro' => ['value' => 'Des tarifs clairs, adaptés à la longueur de vos cheveux. Le diagnostic capillaire est toujours offert.', 'type' => 'string'],
         ];
 
         foreach ($settings as $key => $setting) {
+            // On ne (re)pose que les clés absentes : re-seeder en production
+            // ne doit jamais réécraser un réglage déjà ajusté depuis l'admin.
+            if (Setting::query()->where('key', $key)->exists()) {
+                continue;
+            }
+
             Setting::set($key, $setting['value'], $setting['type']);
         }
     }

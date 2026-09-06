@@ -3,11 +3,18 @@
         ['label' => 'Accueil',        'href' => url('/') . '#accueil'],
         ['label' => 'Le lissage',     'href' => url('/') . '#le-lissage'],
         ['label' => 'Résultats',      'href' => url('/') . '#resultats'],
+        ['label' => 'Tarifs',         'href' => url('/') . '#tarifs'],
         ['label' => 'Notre méthode',  'href' => url('/') . '#notre-methode'],
         ['label' => 'Témoignages',    'href' => url('/') . '#temoignages'],
         ['label' => 'FAQ',            'href' => url('/') . '#faq'],
         ['label' => 'Contact',        'href' => url('/') . '#contact'],
     ];
+
+    // Bandeau supérieur — piloté depuis /admin/apparence.
+    $bannerEnabled = (bool) \App\Models\Setting::getCached('top_banner_enabled', true);
+    $bannerText = \App\Models\Setting::getCached('top_banner_text', config('aylalisse.baseline'));
+    $bannerSubtext = \App\Models\Setting::getCached('top_banner_subtext');
+    $showBanner = $bannerEnabled && filled($bannerText);
 @endphp
 
 <header
@@ -17,11 +24,14 @@
     :class="scrolled || open ? 'bg-cream/95 backdrop-blur border-b border-nude/30' : 'bg-transparent'"
 >
     {{-- Bandeau annonce --}}
-    <div class="hidden bg-cocoa text-center text-white lg:block">
-        <p class="py-2 text-[0.6875rem] font-semibold uppercase tracking-[0.22em]">
-            Haute coiffure &amp; lissage d’exception — Diagnostic personnalisé offert
-        </p>
-    </div>
+    @if ($showBanner)
+        <div class="hidden bg-cocoa text-center text-white lg:block">
+            <p class="py-2 text-[0.6875rem] font-semibold uppercase tracking-[0.22em]">{{ $bannerText }}</p>
+            @if (filled($bannerSubtext))
+                <p class="-mt-1.5 pb-2 text-[0.625rem] font-medium tracking-[0.16em] text-white/60">{{ $bannerSubtext }}</p>
+            @endif
+        </div>
+    @endif
 
     <div class="container-editorial">
         <div class="flex items-center justify-between py-5">

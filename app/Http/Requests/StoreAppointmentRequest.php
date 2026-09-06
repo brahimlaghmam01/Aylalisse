@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\LissageService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -49,7 +50,12 @@ class StoreAppointmentRequest extends FormRequest
             'phone' => ['required', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:150'],
 
-            'hair_length' => ['nullable', 'string', Rule::in(self::HAIR_LENGTHS)],
+            // La longueur devient obligatoire lorsque la prestation choisie
+            // est tarifée par longueur : sans elle, impossible de figer un prix.
+            'hair_length' => [
+                Rule::requiredIf(fn () => $this->selectedServiceHasLengthPricing()),
+                'nullable', 'string', Rule::in(self::HAIR_LENGTHS),
+            ],
             'natural_texture' => ['nullable', 'string', Rule::in(self::NATURAL_TEXTURES)],
             'chemical_history' => ['nullable', 'array'],
             'chemical_history.*' => [Rule::in(self::CHEMICAL_HISTORY_OPTIONS)],
@@ -79,6 +85,25 @@ class StoreAppointmentRequest extends FormRequest
         return [
             'lissage_service_id.exists' => "La prestation sélectionnée n'est pas disponible.",
             'appointment_date.after_or_equal' => 'La date choisie doit être aujourd’hui ou une date future.',
+            'hair_length.required' => 'Merci d’indiquer la longueur de vos cheveux pour cette prestation.',
         ];
+    }
+
+    /**
+     * La prestation choisie applique-t-elle une tarification par longueur ?
+     * (une requête légère, ciblée sur les seules colonnes de prix.)
+     */
+    protected function selectedServiceHasLengthPricing(): bool
+    {
+        $id = $this->input('lissage_service_id');
+
+        if (! $id) {
+            return false;
+        }
+
+        return (bool) LissageService::query()
+            ->whereKey($id)
+            ->first(['id', 'price', 'price_courts', 'price_mi_longs', 'price_longs'])
+            ?->hasLengthPricing();
     }
 }

@@ -85,6 +85,41 @@ document.addEventListener('alpine:init', () => {
             return this.services.find((s) => s.id === this.selectedServiceId) || null;
         },
 
+        // Prix réellement applicable : dépend de la longueur des cheveux
+        // quand la prestation est tarifée par longueur, sinon prix forfaitaire.
+        // null tant que la longueur n'est pas choisie pour une prestation
+        // tarifée par longueur.
+        get effectivePrice() {
+            const s = this.selectedService;
+            if (!s) {
+                return null;
+            }
+            if (s.has_length_pricing) {
+                if (!this.hairLength) {
+                    return null;
+                }
+                const p = s.length_prices[this.hairLength];
+                return p === undefined || p === null ? s.price : p;
+            }
+
+            return s.price;
+        },
+
+        get totalPriceLabel() {
+            const s = this.selectedService;
+            if (!s) {
+                return '';
+            }
+            if (s.is_on_quote) {
+                return 'Sur devis';
+            }
+            if (this.effectivePrice === null) {
+                return s.price_label; // "À partir de 80 €"
+            }
+
+            return money(this.effectivePrice);
+        },
+
         get remainingAmountLabel() {
             const s = this.selectedService;
             if (!s) {
@@ -93,8 +128,15 @@ document.addEventListener('alpine:init', () => {
             if (s.is_on_quote) {
                 return 'À définir après diagnostic';
             }
+            if (this.effectivePrice === null) {
+                return 'Selon la longueur choisie';
+            }
 
-            return money(Math.max(s.price - s.deposit_amount, 0));
+            return money(Math.max(this.effectivePrice - s.deposit_amount, 0));
+        },
+
+        get needsHairLength() {
+            return !!this.selectedService?.has_length_pricing;
         },
 
         money,
@@ -277,6 +319,11 @@ document.addEventListener('alpine:init', () => {
             }
             if (!this.selectedDate || !this.selectedSlot) {
                 this.submitError = this.submitError || 'Merci de choisir une date et un créneau.';
+                valid = false;
+            }
+            if (this.needsHairLength && !this.hairLength) {
+                this.errors.hair_length = 'Merci d’indiquer la longueur de vos cheveux : le tarif en dépend.';
+                this.submitError = this.submitError || 'Merci d’indiquer la longueur de vos cheveux.';
                 valid = false;
             }
 

@@ -8,9 +8,9 @@
     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         @forelse ($results as $result)
             <div class="admin-card overflow-hidden">
-                <div class="grid grid-cols-2">
-                    <img src="{{ Storage::url($result->before_image) }}" alt="Avant — {{ $result->title }}" class="h-32 w-full object-cover">
-                    <img src="{{ Storage::url($result->after_image) }}" alt="Après — {{ $result->title }}" class="h-32 w-full object-cover">
+                <div class="grid grid-cols-2 bg-sand">
+                    <img src="{{ $result->before_image_url }}" alt="Avant — {{ $result->title }}" class="h-32 w-full object-cover" loading="lazy">
+                    <img src="{{ $result->after_image_url }}" alt="Après — {{ $result->title }}" class="h-32 w-full object-cover" loading="lazy">
                 </div>
                 <div class="p-4">
                     <p class="font-serif text-lg text-cocoa">{{ $result->title }}</p>

@@ -205,14 +205,17 @@ class AppointmentAvailabilityServiceTest extends TestCase
 
     public function test_slot_within_minimum_notice_window_is_rejected(): void
     {
-        // minimum_booking_notice_hours = 24 (SettingSeeder) : demain à la première heure
-        // d'ouverture est très probablement à moins de 24h de "maintenant".
-        $tomorrow = Carbon::today()->addDay();
-        while (! in_array($tomorrow->dayOfWeekIso, [2, 3, 4, 5, 6], true)) {
-            $tomorrow->addDay();
-        }
+        // minimum_booking_notice_hours = 24 (SettingSeeder). On fige "maintenant"
+        // un mardi à 08:00 : le créneau du même jour à 09:00 (dans 1h) est bien
+        // en deçà du délai de préavis. Temps figé => test déterministe quel que
+        // soit le jour d'exécution.
+        Carbon::setTestNow(Carbon::parse('2026-09-08 08:00:00')); // mardi
 
-        $this->assertFalse($this->availability->isSlotAvailable($tomorrow, '09:00', $this->service));
+        $sameDay = Carbon::parse('2026-09-08');
+
+        $this->assertFalse($this->availability->isSlotAvailable($sameDay, '09:00', $this->service));
+
+        Carbon::setTestNow();
     }
 
     public function test_get_available_slots_excludes_out_of_hours_start(): void

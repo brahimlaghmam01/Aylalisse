@@ -8,6 +8,8 @@
         ['route' => 'admin.services.index', 'label' => 'Prestations', 'match' => 'admin.services.*'],
         ['route' => 'admin.results.index', 'label' => 'Résultats avant / après', 'match' => 'admin.results.*'],
         ['route' => 'admin.testimonials.index', 'label' => 'Témoignages', 'match' => 'admin.testimonials.*'],
+        ['route' => 'admin.pricing.index', 'label' => 'Tarifs', 'match' => 'admin.pricing.*'],
+        ['route' => 'admin.site-content.index', 'label' => 'Apparence du site', 'match' => 'admin.site-content.*'],
         ['route' => 'admin.availability.index', 'label' => 'Disponibilités', 'match' => 'admin.availability.*'],
         ['route' => 'admin.settings.index', 'label' => 'Paramètres', 'match' => 'admin.settings.*'],
     ];

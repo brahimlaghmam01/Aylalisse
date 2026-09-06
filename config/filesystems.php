@@ -41,7 +41,14 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // URL racine-relative volontairement (« /storage » et non
+            // APP_URL.'/storage') : les <img src> générés sont ainsi toujours
+            // sur la même origine que la page qui les affiche. Sans cela, une
+            // page servie sur http://127.0.0.1:8000 (défaut de `php artisan
+            // serve`) charge des images http://localhost:8000/... que la CSP
+            // `img-src 'self'` bloque (origines différentes). Idem en
+            // production si le site est atteint via www. et sans www.
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

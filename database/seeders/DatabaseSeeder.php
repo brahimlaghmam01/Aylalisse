@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             LissageServiceSeeder::class,
             BusinessHourSeeder::class,
             SettingSeeder::class,
+            PriceSeeder::class,
         ]);
     }
 }

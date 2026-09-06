@@ -66,6 +66,21 @@ identifiants.
 | `DB_DATABASE` | nom de la base fournie par l'hébergeur |
 | `DB_USERNAME` / `DB_PASSWORD` | fournis par l'hébergeur, jamais codés en dur |
 
+### Fichiers & stockage
+
+| Variable | Production |
+|---|---|
+| `FILESYSTEM_DISK` | `public` — **obligatoire.** Les images uploadées (avant/après, témoignages, image Hero, photos de prestation) sont servies depuis `storage/app/public` via le lien `public/storage`. Sur `local`, `Storage::url()` résout alors contre le disque privé et les images ne s'affichent pas. |
+
+La base ne stocke que des **chemins relatifs** (`before-after/xxx.jpg`, `hero/yyy.jpg`) —
+jamais d'URL absolue. Le disque `public` est configuré avec `'url' => '/storage'`
+(racine-relative, voir `config/filesystems.php`) : les `<img src>` générés sont
+donc `/storage/…` et se résolvent **toujours sur l'origine de la page**. Les images
+fonctionnent quel que soit l'hôte utilisé pour atteindre le site (`127.0.0.1`,
+`localhost`, domaine avec ou sans `www.`, http ou https) et la CSP `img-src 'self'`
+les autorise sans configuration supplémentaire. Une redirection 301 `www.`→apex
+reste recommandée pour le SEO, mais n'est plus nécessaire au bon affichage des images.
+
 ### Courrier électronique (SMTP)
 
 | Variable | Rôle |
@@ -185,12 +200,31 @@ l'offre souscrite.**
 - **Migrations** : exécutées via le terminal SSH si disponible
   (`php artisan migrate --force`), sinon via un script one-shot protégé
   puis supprimé immédiatement après exécution.
+- **`FILESYSTEM_DISK=public`** : indispensable en production (voir section 3).
 - **Storage link** : Hostinger **ne crée pas automatiquement** le lien
   symbolique `public/storage` → `storage/app/public`. Exécuter
   `php artisan storage:link` manuellement (SSH) ou, si les liens symboliques
   ne sont pas supportés par l'offre, copier physiquement le contenu de
   `storage/app/public` vers `public/storage` après chaque déploiement
-  contenant de nouveaux fichiers.
+  contenant de nouveaux fichiers. Vérifier ensuite qu'une image de test est
+  bien accessible à l'URL `https://<domaine>/storage/<chemin>`.
+- **Contenu éditable sans redéploiement** : bandeau supérieur, image Hero,
+  grille tarifaire, prestations (nom, tarifs, photo) et résultats avant/après
+  se pilotent entièrement depuis `/admin`. Aucun de ces contenus n'est codé
+  dans les vues — la page d'accueil affiche les prestations réellement
+  actives (mêmes prestations que le formulaire de réservation).
+- **Tarification par longueur** : chaque prestation peut définir un prix
+  *cheveux courts / mi-longs / longs* (menu *Prestations*). Dès qu'un de ces
+  prix est renseigné, la longueur devient obligatoire à la réservation et le
+  prix facturé en dépend. Le prix est **figé sur le rendez-vous** au moment
+  de la réservation : une hausse de tarif ultérieure n'affecte jamais les
+  rendez-vous déjà pris (ni leur valeur dans les statistiques).
+- **Suivi des encaissements** : le tableau de bord distingue le *chiffre
+  d'affaires* (prestations terminées, prix historiques) de l'*encaissé*
+  (acompte et/ou solde cochés « payé » sur la fiche du rendez-vous). Un
+  rendez-vous « terminé » n'est pas considéré comme encaissé tant que le
+  solde n'a pas été marqué payé manuellement — il n'y a pas de paiement en
+  ligne.
 - **Cache** : exécuter les trois commandes de la section 4 après chaque
   déploiement.
 - **Queue sans worker permanent** : configurer une tâche cron (via le panneau
@@ -249,9 +283,12 @@ recommandée si l'espace de stockage le permet.
   `AdminLoginRequest`), plafond général `180/min` sur toute l'administration
   authentifiée.
 - **Uploads** : MIME strictement limité à `jpg,jpeg,png,webp` (jamais `svg`,
-  jamais de type exécutable), taille max 4 Mo, validation `image` Laravel
-  (rejette un fichier renommé qui n'est pas réellement une image), noms de
-  fichiers générés aléatoirement par Laravel (jamais le nom original conservé).
+  jamais de type exécutable), taille max 4 Mo (avant/après, témoignages) ou
+  6 Mo (image Hero), validation `image` Laravel (rejette un fichier renommé
+  qui n'est pas réellement une image), noms de fichiers générés aléatoirement
+  par Laravel (jamais le nom original conservé). Le remplacement d'une image
+  supprime automatiquement l'ancien fichier ; la suppression d'un résultat
+  supprime ses deux fichiers.
 - **Erreurs** : pages personnalisées `404`/`419`/`429`/`500`
   (`resources/views/errors/`), autonomes (sans dépendance à la base de
   données), n'affichent jamais de détail technique.
@@ -263,12 +300,15 @@ recommandée si l'espace de stockage le permet.
 ## 10. Checklist finale avant mise en production
 
 - [ ] `APP_ENV=production`, `APP_DEBUG=false`
-- [ ] `APP_URL` en HTTPS
+- [ ] `APP_URL` en HTTPS (redirection `www`/apex recommandée pour le SEO)
+- [ ] `FILESYSTEM_DISK=public`
 - [ ] `.env` de production renseigné (DB, SMTP, `ADMIN_EMAIL`/`ADMIN_PASSWORD` changés)
 - [ ] `composer install --no-dev --optimize-autoloader`
 - [ ] `npm run build` exécuté, `public/build/` déployé
 - [ ] `php artisan migrate --force`
 - [ ] `php artisan storage:link` (ou copie manuelle si non supporté)
+- [ ] Une image de test s'affiche bien à `https://<domaine>/storage/<chemin>`
+- [ ] `php artisan db:seed --class=PriceSeeder --force` (grille tarifaire initiale, sans effet si déjà remplie)
 - [ ] `php artisan config:cache && php artisan route:cache && php artisan view:cache`
 - [ ] Worker de file d'attente actif (démon ou cron `queue:work --stop-when-empty`)
 - [ ] Test d'envoi d'e-mail réel (SMTP de production) via une vraie réservation

@@ -22,7 +22,19 @@
                 @forelse ($services as $service)
                     <tr>
                         <td class="font-medium">{{ $service->name }}</td>
-                        <td>{{ $service->is_on_quote ? 'Sur devis' : number_format((float) $service->price, 2, ',', ' ').' €' }}</td>
+                        <td>
+                            @if ($service->is_on_quote)
+                                Sur devis
+                            @elseif ($service->hasLengthPricing())
+                                <span class="text-xs text-ink/60">
+                                    @foreach ($service->lengthPrices() as $length => $amount)
+                                        {{ ['courts' => 'C', 'mi-longs' => 'M', 'longs' => 'L'][$length] ?? $length }}&nbsp;{{ number_format($amount, 0, ',', ' ') }}&nbsp;€@if(! $loop->last) · @endif
+                                    @endforeach
+                                </span>
+                            @else
+                                {{ number_format((float) $service->price, 2, ',', ' ') }} €
+                            @endif
+                        </td>
                         <td>{{ number_format((float) $service->deposit_amount, 2, ',', ' ') }} €</td>
                         <td>{{ $service->duration_minutes }} min</td>
                         <td>{{ $service->buffer_minutes }} min</td>

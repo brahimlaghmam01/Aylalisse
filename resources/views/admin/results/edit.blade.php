@@ -5,11 +5,11 @@
         <div class="mb-6 grid grid-cols-2 gap-4">
             <div>
                 <p class="admin-label">Image avant actuelle</p>
-                <img src="{{ Storage::url($result->before_image) }}" alt="Avant" class="h-32 w-full border border-nude/40 object-cover">
+                <img src="{{ $result->before_image_url }}" alt="Avant" class="h-32 w-full border border-nude/40 object-cover">
             </div>
             <div>
                 <p class="admin-label">Image après actuelle</p>
-                <img src="{{ Storage::url($result->after_image) }}" alt="Après" class="h-32 w-full border border-nude/40 object-cover">
+                <img src="{{ $result->after_image_url }}" alt="Après" class="h-32 w-full border border-nude/40 object-cover">
             </div>
         </div>
 

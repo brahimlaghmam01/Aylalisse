@@ -33,10 +33,32 @@
                     <div><dt class="text-ink/45">Date</dt><dd class="mt-1 font-medium">{{ $appointment->appointment_date->translatedFormat('d F Y') }}</dd></div>
                     <div><dt class="text-ink/45">Heure</dt><dd class="mt-1 font-medium">{{ \Illuminate\Support\Carbon::parse($appointment->start_time)->format('H:i') }} — {{ \Illuminate\Support\Carbon::parse($appointment->end_time)->format('H:i') }}</dd></div>
                     <div><dt class="text-ink/45">Durée</dt><dd class="mt-1 font-medium">{{ $appointment->lissageService->duration_minutes }} min</dd></div>
-                    <div><dt class="text-ink/45">Prix</dt><dd class="mt-1 font-medium">{{ number_format((float) $appointment->price, 2, ',', ' ') }} €</dd></div>
-                    <div><dt class="text-ink/45">Acompte</dt><dd class="mt-1 font-medium">{{ number_format((float) $appointment->deposit_amount, 2, ',', ' ') }} €</dd></div>
-                    <div><dt class="text-ink/45">Solde restant</dt><dd class="mt-1 font-medium">{{ number_format((float) $appointment->remaining_amount, 2, ',', ' ') }} €</dd></div>
+                    <div><dt class="text-ink/45">Prix</dt><dd class="mt-1 font-medium">{{ $appointment->priceLabel() }}</dd></div>
+                    <div><dt class="text-ink/45">Acompte</dt><dd class="mt-1 font-medium">{{ $appointment->depositLabel() }}</dd></div>
+                    <div><dt class="text-ink/45">Solde restant</dt><dd class="mt-1 font-medium">{{ $appointment->remainingLabel() }}</dd></div>
                 </dl>
+            </x-admin.card>
+
+            <x-admin.card title="Encaissement">
+                @unless ($appointment->isOnQuote())
+                    <div class="mb-4 grid grid-cols-3 gap-4 text-sm">
+                        <div><dt class="text-ink/45">Encaissé</dt><dd class="mt-1 font-medium text-emerald-700">{!! \App\Support\Money::eurPrecise($appointment->amountCollected()) !!}</dd></div>
+                        <div><dt class="text-ink/45">Reste à encaisser</dt><dd class="mt-1 font-medium">{!! \App\Support\Money::eurPrecise($appointment->amountOutstanding()) !!}</dd></div>
+                    </div>
+                @endunless
+                <form method="POST" action="{{ route('admin.appointments.payment', $appointment) }}" class="space-y-3">
+                    @csrf
+                    @method('PATCH')
+                    <label class="flex items-center gap-2.5 text-sm text-ink/80">
+                        <input type="checkbox" name="deposit_paid" value="1" @checked($appointment->isDepositPaid()) class="h-4 w-4 accent-cocoa">
+                        Acompte payé{{ $appointment->isDepositPaid() ? ' — le '.$appointment->deposit_paid_at->translatedFormat('d/m/Y') : '' }}
+                    </label>
+                    <label class="flex items-center gap-2.5 text-sm text-ink/80">
+                        <input type="checkbox" name="balance_paid" value="1" @checked($appointment->isBalancePaid()) class="h-4 w-4 accent-cocoa">
+                        Solde payé{{ $appointment->isBalancePaid() ? ' — le '.$appointment->balance_paid_at->translatedFormat('d/m/Y') : '' }}
+                    </label>
+                    <button type="submit" class="admin-btn admin-btn-outline">Enregistrer</button>
+                </form>
             </x-admin.card>
 
             <x-admin.card title="Cliente">

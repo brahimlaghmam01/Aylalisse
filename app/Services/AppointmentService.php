@@ -88,9 +88,11 @@ class AppointmentService
         $start = Carbon::parse($date->toDateString().' '.$startTime);
         $end = $start->copy()->addMinutes($service->duration_minutes);
 
-        $price = (float) $service->price;
-        $deposit = (float) $service->deposit_amount;
-        $remaining = max($price - $deposit, 0);
+        // Source unique du calcul tarifaire (prix éventuellement fonction de
+        // la longueur des cheveux). Ce triplet est figé sur le rendez-vous :
+        // il ne suivra jamais une modification ultérieure du prix de la
+        // prestation.
+        $pricing = $service->pricingFor($data['hair_length'] ?? null);
 
         return Appointment::create([
             'reference' => Appointment::generateUniqueReference($date),
@@ -100,9 +102,9 @@ class AppointmentService
             'start_time' => $start->format('H:i:s'),
             'end_time' => $end->format('H:i:s'),
             'status' => AppointmentStatus::Pending,
-            'price' => $price,
-            'deposit_amount' => $deposit,
-            'remaining_amount' => $remaining,
+            'price' => $pricing['price'],
+            'deposit_amount' => $pricing['deposit_amount'],
+            'remaining_amount' => $pricing['remaining_amount'],
             'hair_length' => $data['hair_length'] ?? null,
             'natural_texture' => $data['natural_texture'] ?? null,
             'chemical_history' => $data['chemical_history'] ?? null,

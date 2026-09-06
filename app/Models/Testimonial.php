@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
 class Testimonial extends Model
@@ -48,5 +49,19 @@ class Testimonial extends Model
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order')->orderByDesc('created_at');
+    }
+
+    /**
+     * URL publique de la photo de la cliente, résolue explicitement sur le
+     * disque "public" (jamais tributaire de FILESYSTEM_DISK). Null si aucune
+     * photo n'a été fournie.
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (blank($this->image)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->image);
     }
 }

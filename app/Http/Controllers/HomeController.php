@@ -2,18 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BeforeAfterResult;
+use App\Models\LissageService;
+use App\Models\PriceSection;
+use App\Models\Setting;
+use App\Models\Testimonial;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Storage;
+
 class HomeController extends Controller
 {
     /**
      * Page d'accueil éditoriale AylaLisse.
      *
-     * Phase 1 : contenu de démonstration codé en dur pour valider le
-     * système visuel. En Phase 2, ces données proviendront de la base
-     * (prestations de lissage, résultats avant/après, témoignages).
+     * Le contenu dynamique (résultats avant/après, témoignages, grille
+     * tarifaire, image Hero, bandeau) provient de la base et de la table
+     * "settings". Les tableaux ci-dessous ne servent plus que de repli
+     * quand aucune donnée n'a encore été saisie côté admin — le design
+     * premium reste identique dans les deux cas.
      */
     public function index()
     {
-        $experiences = [
+        // Repli utilisé uniquement si aucune prestation active n'existe en base.
+        $experiencesFallback = [
             [
                 'nom' => 'Lissage Signature Soyeux',
                 'description' => 'Idéal pour cheveux ondulés à bouclés avec frisottis récalcitrants. Souplesse aérienne et hydratation profonde.',
@@ -58,7 +69,7 @@ class HomeController extends Controller
             ['titre' => 'Expérience premium', 'texte' => 'Un accompagnement discret et attentif, du diagnostic à l’entretien à domicile.'],
         ];
 
-        $temoignages = [
+        $temoignagesFallback = [
             ['nom' => 'Camille R.', 'note' => 5, 'texte' => 'Mes cheveux bouclés étaient impossibles à discipliner. Six mois après, ils restent lisses, brillants et faciles à coiffer.', 'prestation' => 'Lissage Signature Soyeux'],
             ['nom' => 'Sarah M.', 'note' => 5, 'texte' => 'Le diagnostic a tout changé. On m’a proposé exactement ce dont mes cheveux décolorés avaient besoin.', 'prestation' => 'Lissage Intense & Réparation'],
             ['nom' => 'Éléonore L.', 'note' => 5, 'texte' => 'Un accueil d’exception et un résultat miroir spectaculaire. Je n’avais jamais vu mes cheveux aussi sains.', 'prestation' => 'Lissage Premium Miroir'],
@@ -74,6 +85,85 @@ class HomeController extends Controller
             ['q' => 'Puis-je réserver directement en ligne ?', 'r' => 'Oui. Le module de réservation vous permet de choisir votre prestation, votre date et votre créneau. Un acompte confirme le rendez-vous.'],
         ];
 
-        return view('home', compact('experiences', 'methode', 'atouts', 'temoignages', 'faq'));
+        // ---- Contenu dynamique ----
+
+        // Prestations réellement proposées : la présentation publique doit
+        // toujours refléter ce que la cliente peut réserver (mêmes
+        // prestations que le formulaire de réservation).
+        try {
+            $services = LissageService::query()->active()->ordered()->get();
+        } catch (QueryException) {
+            $services = collect();
+        }
+
+        // Résultats avant/après publiés — on écarte silencieusement ceux dont
+        // un fichier image est manquant pour ne jamais afficher d'image cassée.
+        //
+        // Tout ce bloc est tolérant aux tables absentes : sur un déploiement
+        // fraîchement mis en ligne mais pas encore migré, la page d'accueil
+        // doit s'afficher (avec ses contenus de repli) plutôt que de renvoyer
+        // une erreur 500 — même philosophie que Setting::get().
+        try {
+            $results = BeforeAfterResult::query()
+                ->published()
+                ->ordered()
+                ->get()
+                ->filter->has_both_images
+                ->values();
+        } catch (QueryException) {
+            $results = collect();
+        }
+
+        try {
+            $temoignages = Testimonial::query()
+                ->published()
+                ->ordered()
+                ->get();
+        } catch (QueryException) {
+            $temoignages = collect();
+        }
+
+        // Grille tarifaire : sections actives ayant au moins une ligne active.
+        try {
+            $priceSections = Setting::get('pricing_enabled', true)
+                ? PriceSection::query()
+                    ->active()
+                    ->ordered()
+                    ->with('activeRows')
+                    ->get()
+                    ->filter(fn (PriceSection $section) => $section->activeRows->isNotEmpty())
+                    ->values()
+                : collect();
+        } catch (QueryException) {
+            $priceSections = collect();
+        }
+
+        $pricing = [
+            'title' => Setting::getCached('pricing_title', 'Nos tarifs'),
+            'intro' => Setting::getCached('pricing_intro'),
+        ];
+
+        $heroImage = $this->publicImageUrl(Setting::getCached('hero_image'));
+
+        return view('home', compact(
+            'services', 'experiencesFallback', 'methode', 'atouts', 'faq',
+            'results', 'temoignages', 'temoignagesFallback',
+            'priceSections', 'pricing', 'heroImage',
+        ));
+    }
+
+    /**
+     * URL publique d'un fichier stocké sur le disque "public", ou null si le
+     * chemin est vide ou si le fichier n'existe plus (jamais d'image cassée).
+     */
+    private function publicImageUrl(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+
+        return $disk->exists($path) ? $disk->url($path) : null;
     }
 }

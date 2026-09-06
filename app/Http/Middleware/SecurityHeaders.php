@@ -51,7 +51,10 @@ class SecurityHeaders
             "default-src 'self'",
             "script-src {$scriptSrc}",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com",
+            // data: — FullCalendar (admin) embarque sa police d'icônes IcoMoon
+            // en data URI. Une police en data: est inerte (aucune exécution) ;
+            // l'autoriser évite une violation CSP bruyante sur chaque page admin.
+            "font-src 'self' https://fonts.gstatic.com data:",
             "img-src 'self' data:",
             "connect-src {$connectSrc}",
             "frame-ancestors 'self'",

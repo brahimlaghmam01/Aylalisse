@@ -7,10 +7,15 @@ use App\Http\Requests\StoreLissageServiceRequest;
 use App\Http\Requests\UpdateLissageServiceRequest;
 use App\Models\LissageService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AdminLissageServiceController extends Controller
 {
+    private const DISK = 'public';
+
+    private const DIRECTORY = 'services';
+
     public function index(): View
     {
         $services = LissageService::query()->ordered()->get();
@@ -25,7 +30,13 @@ class AdminLissageServiceController extends Controller
 
     public function store(StoreLissageServiceRequest $request): RedirectResponse
     {
-        LissageService::create($request->validated());
+        $data = $request->safe()->except('image');
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store(self::DIRECTORY, self::DISK);
+        }
+
+        LissageService::create($data);
 
         return redirect()->route('admin.services.index')->with('success', 'La prestation a été enregistrée.');
     }
@@ -37,7 +48,20 @@ class AdminLissageServiceController extends Controller
 
     public function update(UpdateLissageServiceRequest $request, LissageService $lissageService): RedirectResponse
     {
-        $lissageService->update($request->validated());
+        $data = $request->safe()->except('image');
+
+        $oldImage = $lissageService->image;
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store(self::DIRECTORY, self::DISK);
+        }
+
+        $lissageService->update($data);
+
+        // L'ancien fichier n'est supprimé qu'une fois le remplacement confirmé en base.
+        if (isset($data['image']) && $oldImage) {
+            Storage::disk(self::DISK)->delete($oldImage);
+        }
 
         return redirect()->route('admin.services.index')->with('success', 'La prestation a été mise à jour.');
     }

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,6 +36,24 @@ class AdminClientController extends Controller
             $query->with('lissageService')->orderByDesc('appointment_date')->orderByDesc('start_time');
         }]);
 
-        return view('admin.clients.show', compact('client'));
+        $completed = $client->appointments->where('status', AppointmentStatus::Completed);
+
+        $financials = [
+            'total_appointments' => $client->appointments->count(),
+            'completed_count' => $completed->count(),
+            // Valeur des prestations réellement terminées — prix historiques.
+            'completed_value' => round($completed->sum(fn (Appointment $a) => (float) $a->price), 2),
+            // Réellement encaissé (acomptes + soldes cochés payés), tous statuts hors annulés.
+            'collected' => round(
+                $client->appointments
+                    ->where('status', '!=', AppointmentStatus::Cancelled)
+                    ->sum(fn (Appointment $a) => $a->amountCollected()),
+                2
+            ),
+            // Restant à encaisser sur les prestations terminées.
+            'outstanding' => round($completed->sum(fn (Appointment $a) => $a->amountOutstanding()), 2),
+        ];
+
+        return view('admin.clients.show', compact('client', 'financials'));
     }
 }

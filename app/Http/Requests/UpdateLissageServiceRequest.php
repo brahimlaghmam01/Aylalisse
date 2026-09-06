@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\LissageServicePricingInput;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,11 @@ class UpdateLissageServiceRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge(LissageServicePricingInput::normalize($this));
     }
 
     public function rules(): array
@@ -23,6 +29,9 @@ class UpdateLissageServiceRequest extends FormRequest
             'short_description' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'price_courts' => ['nullable', 'numeric', 'min:0'],
+            'price_mi_longs' => ['nullable', 'numeric', 'min:0'],
+            'price_longs' => ['nullable', 'numeric', 'min:0'],
             'deposit_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'duration_minutes' => ['sometimes', 'required', 'integer', 'min:15', 'max:600'],
             'buffer_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
@@ -39,6 +48,9 @@ class UpdateLissageServiceRequest extends FormRequest
             'short_description' => 'description courte',
             'description' => 'description',
             'price' => 'prix',
+            'price_courts' => 'prix cheveux courts',
+            'price_mi_longs' => 'prix cheveux mi-longs',
+            'price_longs' => 'prix cheveux longs',
             'deposit_amount' => 'acompte',
             'duration_minutes' => 'durée (minutes)',
             'buffer_minutes' => 'tampon (minutes)',

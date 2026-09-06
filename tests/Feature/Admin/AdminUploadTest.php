@@ -67,6 +67,27 @@ class AdminUploadTest extends AdminFeatureTestCase
         Storage::disk('public')->assertExists($result->after_image);
     }
 
+    public function test_the_results_list_and_edit_pages_render_the_image_urls(): void
+    {
+        $admin = $this->admin();
+
+        $result = BeforeAfterResult::create([
+            'title' => 'Transformation vitrine',
+            'before_image' => UploadedFile::fake()->image('before.jpg')->store('before-after', 'public'),
+            'after_image' => UploadedFile::fake()->image('after.jpg')->store('before-after', 'public'),
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')->get(route('admin.results.index'))
+            ->assertOk()
+            ->assertSee($result->before_image_url, false)
+            ->assertSee($result->after_image_url, false);
+
+        $this->actingAs($admin, 'admin')->get(route('admin.results.edit', $result))
+            ->assertOk()
+            ->assertSee($result->before_image_url, false);
+    }
+
     public function test_replacing_an_image_removes_the_previous_file(): void
     {
         $admin = $this->admin();
